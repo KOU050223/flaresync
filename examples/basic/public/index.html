@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>flaresync demo</title>
+  <style>
+    body { font-family: monospace; padding: 2rem; background: #0f0f0f; color: #e0e0e0; }
+    h1 { color: #f6821f; }
+    #state { font-size: 1.4rem; margin: 1rem 0; }
+    #log { height: 200px; overflow-y: auto; background: #1a1a1a; padding: 1rem; border-radius: 4px; }
+    button { padding: 0.5rem 1.5rem; font-size: 1rem; background: #f6821f; color: #fff; border: none; border-radius: 4px; cursor: pointer; margin-top: 1rem; }
+    button:hover { background: #d4701a; }
+    .status { font-size: 0.85rem; color: #888; }
+  </style>
+</head>
+<body>
+  <h1>⚡ flaresync demo</h1>
+  <p class="status" id="status">接続中...</p>
+  <div id="state">hp: ?, tick: ?</div>
+  <button onclick="damage()">⚔️ ダメージ (-10)</button>
+  <h3>受信ログ</h3>
+  <div id="log"></div>
+
+  <script>
+    const protocol = location.protocol === "https:" ? "wss:" : "ws:";
+    const ws = new WebSocket(`${protocol}//${location.host}/ws`);
+
+    let state = {};
+
+    ws.addEventListener("open", () => {
+      document.getElementById("status").textContent = "✅ 接続済み";
+    });
+
+    ws.addEventListener("close", () => {
+      document.getElementById("status").textContent = "❌ 切断";
+    });
+
+    ws.addEventListener("message", (ev) => {
+      const msg = JSON.parse(ev.data);
+      if (msg.type === "init") {
+        state = msg.data;
+      } else if (msg.type === "patch") {
+        Object.assign(state, msg.data);
+      }
+
+      document.getElementById("state").textContent =
+        `hp: ${state.hp ?? "?"}  |  tick: ${state.tick ?? "?"}`;
+
+      const log = document.getElementById("log");
+      const line = document.createElement("div");
+      line.textContent = `[${new Date().toLocaleTimeString()}] ${ev.data}`;
+      log.appendChild(line);
+      log.scrollTop = log.scrollHeight;
+    });
+
+    async function damage() {
+      await fetch("/damage?amount=10", { method: "POST" });
+    }
+  </script>
+</body>
+</html>
