@@ -1,0 +1,36 @@
+{
+  "name": "flaresync-client",
+  "version": "0.1.0",
+  "description": "Client library for flaresync Durable Object state sync",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch"
+  },
+  "tsup": {
+    "entry": ["src/index.ts"],
+    "format": ["esm", "cjs"],
+    "dts": true,
+    "sourcemap": true,
+    "clean": true,
+    "splitting": false
+  },
+  "keywords": ["cloudflare", "durable-objects", "sync", "websocket", "client"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^6.0.0"
+  }
+}

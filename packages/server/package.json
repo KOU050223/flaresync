@@ -1,0 +1,37 @@
+{
+  "name": "flaresync",
+  "version": "0.1.0",
+  "description": "Durable Object state sync library for Cloudflare Workers",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch"
+  },
+  "tsup": {
+    "entry": ["src/index.ts"],
+    "format": ["esm", "cjs"],
+    "dts": true,
+    "sourcemap": true,
+    "clean": true,
+    "splitting": false
+  },
+  "keywords": ["cloudflare", "durable-objects", "sync", "websocket"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^6.0.0"
+  }
+}
