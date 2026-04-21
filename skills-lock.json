@@ -6,6 +6,11 @@
       "sourceType": "github",
       "computedHash": "f87ea54de1ad7d8197a21640888af6ccb2e912682710658a9bafb5df0093df61"
     },
+    "code-review": {
+      "source": "cloudflare/cloudflare-docs",
+      "sourceType": "github",
+      "computedHash": "94cc0ffa5607844c606218f01149130654511a9cfa0ec508c2c817f0ff09f778"
+    },
     "durable-objects": {
       "source": "cloudflare/skills",
       "sourceType": "github",

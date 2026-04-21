@@ -6,13 +6,25 @@ export class DurableSync<T extends object> {
   private alarmScheduled = false;
   private proxyCache = new WeakMap<object, object>();
   private mapProxyCache = new Map<string, Map<unknown, unknown>>();
+  private rawTarget: T;
   readonly state: T;
 
   constructor(
     initial: T,
     private ctx: DurableObjectState,
   ) {
+    this.rawTarget = initial;
     this.state = this.proxify(initial, "") as T;
+  }
+
+  // T に Response・Function など structured-clone 非対応の値を含めると
+  // storage.put / storage.get がランタイムエラーになる点に注意
+  static async create<T extends object>(
+    initial: T,
+    ctx: DurableObjectState,
+  ): Promise<DurableSync<T>> {
+    const stored = await ctx.storage.get<T>("__state");
+    return new DurableSync<T>(stored ?? initial, ctx);
   }
 
   private markDirty(): void {
@@ -128,6 +140,7 @@ export class DurableSync<T extends object> {
   async alarm(): Promise<void> {
     this.alarmScheduled = false;
     await this.broadcastDirtyKeys();
+    await this.ctx.storage.put("__state", this.rawTarget);
     if (this.ctx.getWebSockets().length > 0) {
       this.alarmScheduled = true;
       await this.ctx.storage.setAlarm(Date.now() + 50);

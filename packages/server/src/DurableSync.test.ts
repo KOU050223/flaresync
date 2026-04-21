@@ -3,9 +3,13 @@ import { DurableSync } from "./DurableSync";
 
 type MockWs = { send: ReturnType<typeof vi.fn> };
 
-function makeCtx(wsSockets: MockWs[] = []) {
+function makeCtx(wsSockets: MockWs[] = [], storedState?: unknown) {
   return {
-    storage: { setAlarm: vi.fn() },
+    storage: {
+      setAlarm: vi.fn(),
+      get: vi.fn().mockResolvedValue(storedState),
+      put: vi.fn().mockResolvedValue(undefined),
+    },
     getWebSockets: vi.fn(() => wsSockets),
   } as unknown as DurableObjectState;
 }
@@ -274,5 +278,64 @@ describe("MapProxy — Map の set / delete 検知", () => {
       { op: "set", key: "p1", value: 1 },
       { op: "set", key: "p1", value: 2 },
     ]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 9. 永続化 — storage からの復元（030）
+// ---------------------------------------------------------------------------
+describe("永続化 — storage からの復元", () => {
+  it("9-1: 保存済み state があればコンストラクタで storage.get が呼ばれる", async () => {
+    const ctx = makeCtx([], { hp: 50 });
+    const sync = await DurableSync.create({ hp: 100 }, ctx);
+    expect(ctx.storage.get).toHaveBeenCalledWith("__state");
+    expect(sync.state.hp).toBe(50);
+  });
+
+  it("9-2: storage.get が null/undefined のとき initial 値が使われる", async () => {
+    const ctx = makeCtx([], undefined);
+    const sync = await DurableSync.create({ hp: 100 }, ctx);
+    expect(sync.state.hp).toBe(100);
+  });
+
+  it("9-3: 復元した state への代入も dirty 検知される", async () => {
+    const ws = { send: vi.fn() };
+    const ctx = makeCtx([ws], { hp: 50 });
+    const sync = await DurableSync.create({ hp: 100 }, ctx);
+    sync.state.hp = 30;
+    await sync.alarm();
+    const patch = JSON.parse(ws.send.mock.calls[0][0] as string);
+    expect(patch.data).toHaveProperty("hp", 30);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 10. 永続化 — storage への保存（031）
+// ---------------------------------------------------------------------------
+describe("永続化 — storage への保存", () => {
+  it("10-1: alarm 後に storage.put('__state', state) が呼ばれる", async () => {
+    const ctx = makeCtx([], undefined);
+    const sync = await DurableSync.create({ hp: 100 }, ctx);
+    sync.state.hp = 90;
+    await sync.alarm();
+    expect(ctx.storage.put).toHaveBeenCalledWith("__state", expect.objectContaining({ hp: 90 }));
+  });
+
+  it("10-2: dirty なし（変更なし）でも alarm 後に storage.put が呼ばれる", async () => {
+    const ctx = makeCtx([], undefined);
+    const sync = await DurableSync.create({ hp: 100 }, ctx);
+    await sync.alarm();
+    expect(ctx.storage.put).toHaveBeenCalledWith("__state", expect.objectContaining({ hp: 100 }));
+  });
+
+  it("10-3: 複数回の alarm で storage.put がそのつど呼ばれる", async () => {
+    const ws = { send: vi.fn() };
+    const ctx = makeCtx([ws], undefined);
+    const sync = await DurableSync.create({ hp: 100 }, ctx);
+    sync.state.hp = 80;
+    await sync.alarm();
+    sync.state.hp = 60;
+    await sync.alarm();
+    expect(ctx.storage.put).toHaveBeenCalledTimes(2);
   });
 });
