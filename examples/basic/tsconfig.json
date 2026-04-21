@@ -2,8 +2,11 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
-    "types": ["@cloudflare/workers-types"]
+    "rootDir": "../..",
+    "types": ["@cloudflare/workers-types"],
+    "paths": {
+      "flaresync": ["../../packages/server/src/index.ts"]
+    }
   },
-  "include": ["src"]
+  "include": ["src", "../../packages/server/src"]
 }
