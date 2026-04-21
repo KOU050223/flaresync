@@ -1,0 +1,1 @@
+export { DurableSyncClient } from "./DurableSyncClient";

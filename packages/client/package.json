@@ -17,6 +17,8 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
+    "test": "vitest run --reporter=verbose",
+    "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
   "tsup": {
@@ -43,6 +45,7 @@
   "license": "MIT",
   "devDependencies": {
     "tsup": "^8.0.0",
-    "typescript": "^6.0.0"
+    "typescript": "^6.0.0",
+    "vitest": "^4.1.4"
   }
 }

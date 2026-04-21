@@ -2,22 +2,42 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8" />
-  <title>flaresync demo</title>
+  <title>flaresync demo — Phase 2</title>
   <style>
     body { font-family: monospace; padding: 2rem; background: #0f0f0f; color: #e0e0e0; }
     h1 { color: #f6821f; }
-    #state { font-size: 1.4rem; margin: 1rem 0; }
-    #log { height: 200px; overflow-y: auto; background: #1a1a1a; padding: 1rem; border-radius: 4px; }
-    button { padding: 0.5rem 1.5rem; font-size: 1rem; background: #f6821f; color: #fff; border: none; border-radius: 4px; cursor: pointer; margin-top: 1rem; }
-    button:hover { background: #d4701a; }
     .status { font-size: 0.85rem; color: #888; }
+    #hp { font-size: 1.4rem; margin: 0.5rem 0; }
+    #players { margin: 0.5rem 0 1rem; }
+    .player-row { font-size: 1.1rem; padding: 2px 0; }
+    .controls { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
+    button {
+      padding: 0.4rem 1rem; font-size: 0.9rem;
+      background: #f6821f; color: #fff;
+      border: none; border-radius: 4px; cursor: pointer;
+    }
+    button:hover { background: #d4701a; }
+    button.secondary { background: #444; }
+    button.secondary:hover { background: #555; }
+    #log { height: 200px; overflow-y: auto; background: #1a1a1a; padding: 1rem; border-radius: 4px; font-size: 0.8rem; }
   </style>
 </head>
 <body>
-  <h1>⚡ flaresync demo</h1>
+  <h1>⚡ flaresync demo — Phase 2</h1>
   <p class="status" id="status">接続中...</p>
-  <div id="state">hp: ?, tick: ?</div>
-  <button onclick="damage()">⚔️ ダメージ (-10)</button>
+
+  <div id="hp">hp: ?  |  tick: ?</div>
+
+  <h3>プレイヤー一覧</h3>
+  <div id="players">（まだ誰もいません）</div>
+
+  <div class="controls">
+    <button onclick="damage()">⚔️ ダメージ (-10)</button>
+    <button onclick="joinPlayer()">➕ プレイヤー参加</button>
+    <button onclick="moveRandom()" class="secondary">🚶 ランダム移動</button>
+    <button onclick="leaveAll()" class="secondary">🚪 全員退出</button>
+  </div>
+
   <h3>受信ログ</h3>
   <div id="log"></div>
 
@@ -25,7 +45,24 @@
     const protocol = location.protocol === "https:" ? "wss:" : "ws:";
     const ws = new WebSocket(`${protocol}//${location.host}/ws`);
 
-    let state = {};
+    // players は Map<id, {x, y}> として管理
+    let state = { hp: null, tick: null, players: new Map() };
+    let myPlayerId = null;
+
+    function applyPatch(data) {
+      for (const [key, value] of Object.entries(data)) {
+        if (key === "players") {
+          // MapPatch: { op: "set"|"delete", key, value? }
+          if (value.op === "set") {
+            state.players.set(value.key, value.value);
+          } else if (value.op === "delete") {
+            state.players.delete(value.key);
+          }
+        } else {
+          state[key] = value;
+        }
+      }
+    }
 
     ws.addEventListener("open", () => {
       document.getElementById("status").textContent = "✅ 接続済み";
@@ -38,23 +75,64 @@
     ws.addEventListener("message", (ev) => {
       const msg = JSON.parse(ev.data);
       if (msg.type === "init") {
-        state = msg.data;
+        state.hp = msg.data.hp;
+        state.tick = msg.data.tick;
+        state.players = new Map(Object.entries(msg.data.players ?? {}));
       } else if (msg.type === "patch") {
-        Object.assign(state, msg.data);
+        applyPatch(msg.data);
       }
+      renderState();
+      addLog(ev.data);
+    });
 
-      document.getElementById("state").textContent =
+    function renderState() {
+      document.getElementById("hp").textContent =
         `hp: ${state.hp ?? "?"}  |  tick: ${state.tick ?? "?"}`;
 
+      const el = document.getElementById("players");
+      if (state.players.size === 0) {
+        el.textContent = "（まだ誰もいません）";
+        return;
+      }
+      el.innerHTML = "";
+      for (const [id, p] of state.players) {
+        const div = document.createElement("div");
+        div.className = "player-row";
+        div.textContent = `🧑 ${id}  x: ${p.x}  y: ${p.y}`;
+        el.appendChild(div);
+      }
+    }
+
+    function addLog(text) {
       const log = document.getElementById("log");
       const line = document.createElement("div");
-      line.textContent = `[${new Date().toLocaleTimeString()}] ${ev.data}`;
+      line.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
       log.appendChild(line);
       log.scrollTop = log.scrollHeight;
-    });
+    }
 
     async function damage() {
       await fetch("/damage?amount=10", { method: "POST" });
+    }
+
+    async function joinPlayer() {
+      const id = `p${Date.now()}`;
+      const res = await fetch(`/join?id=${id}`, { method: "POST" });
+      const json = await res.json();
+      myPlayerId = json.id;
+    }
+
+    async function moveRandom() {
+      if (!myPlayerId) { alert("先にプレイヤー参加してください"); return; }
+      const x = Math.floor(Math.random() * 100);
+      const y = Math.floor(Math.random() * 100);
+      await fetch(`/move?id=${myPlayerId}&x=${x}&y=${y}`, { method: "POST" });
+    }
+
+    async function leaveAll() {
+      for (const id of state.players.keys()) {
+        await fetch(`/leave?id=${id}`, { method: "POST" });
+      }
     }
   </script>
 </body>

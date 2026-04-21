@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { DurableSync } from "./DurableSync";
 
 type MockWs = { send: ReturnType<typeof vi.fn> };
@@ -174,5 +174,105 @@ describe("alarm 再スケジュール", () => {
     await sync.alarm();
     const afterCount = (ctx.storage.setAlarm as ReturnType<typeof vi.fn>).mock.calls.length;
     expect(afterCount).toBe(beforeCount);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 5. ネストしたオブジェクトの Proxy 化（020）
+// ---------------------------------------------------------------------------
+describe("ネストしたオブジェクトの Proxy 化", () => {
+  it("5-1: ネストした代入が state に反映される", () => {
+    const ctx = makeCtx();
+    const sync = new DurableSync({ player: { x: 0, y: 0 } }, ctx);
+    sync.state.player.x = 10;
+    expect(sync.state.player.x).toBe(10);
+  });
+
+  it("5-2: ネストした代入がパッチに含まれる（パスがキー）", async () => {
+    const ws = { send: vi.fn() };
+    const ctx = makeCtx([ws]);
+    const sync = new DurableSync({ player: { x: 0, y: 0 } }, ctx);
+    sync.state.player.x = 10;
+    await sync.alarm();
+    const patch = JSON.parse(ws.send.mock.calls[0][0] as string);
+    expect(patch.data).toHaveProperty("player.x", 10);
+  });
+
+  it("5-3: 深さ2以上のネストも正しく伝播する", async () => {
+    const ws = { send: vi.fn() };
+    const ctx = makeCtx([ws]);
+    const sync = new DurableSync({ a: { b: { c: 0 } } }, ctx);
+    sync.state.a.b.c = 99;
+    await sync.alarm();
+    const patch = JSON.parse(ws.send.mock.calls[0][0] as string);
+    expect(patch.data).toHaveProperty("a.b.c", 99);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 6. WeakMap キャッシュによる参照等価性（021）
+// ---------------------------------------------------------------------------
+describe("WeakMap キャッシュによる参照等価性", () => {
+  it("6-1: 同じネストオブジェクトへのアクセスは同一 Proxy を返す", () => {
+    const ctx = makeCtx();
+    const sync = new DurableSync({ player: { x: 0 } }, ctx);
+    expect(sync.state.player).toBe(sync.state.player);
+  });
+
+  it("6-2: Proxy 越しに取得した値は元の値と等しい", () => {
+    const ctx = makeCtx();
+    const sync = new DurableSync({ player: { x: 42 } }, ctx);
+    expect(sync.state.player.x).toBe(42);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 7. MapProxy — Map の set / delete 検知（022 / 023）
+// ---------------------------------------------------------------------------
+describe("MapProxy — Map の set / delete 検知", () => {
+  it("7-1: Map.set() がパッチに op:'set' で届く", async () => {
+    const ws = { send: vi.fn() };
+    const ctx = makeCtx([ws]);
+    const sync = new DurableSync({ players: new Map<string, { x: number }>() }, ctx);
+    sync.state.players.set("p1", { x: 5 });
+    await sync.alarm();
+    const patch = JSON.parse(ws.send.mock.calls[0][0] as string);
+    expect(patch.data["players"]).toEqual({ op: "set", key: "p1", value: { x: 5 } });
+  });
+
+  it("7-2: Map.delete() がパッチに op:'delete' で届く", async () => {
+    const ws = { send: vi.fn() };
+    const ctx = makeCtx([ws]);
+    const sync = new DurableSync(
+      { players: new Map<string, { x: number }>([["p1", { x: 5 }]]) },
+      ctx,
+    );
+    sync.state.players.delete("p1");
+    await sync.alarm();
+    const patch = JSON.parse(ws.send.mock.calls[0][0] as string);
+    expect(patch.data["players"]).toEqual({ op: "delete", key: "p1" });
+  });
+
+  it("7-3: Map.set() 後の get() は更新された値を返す", () => {
+    const ctx = makeCtx();
+    const sync = new DurableSync({ players: new Map<string, number>() }, ctx);
+    sync.state.players.set("p1", 99);
+    expect(sync.state.players.get("p1")).toBe(99);
+  });
+
+  it("7-4: 同一ティック内の複数 Map.set() は全操作が配列でパッチに入る", async () => {
+    const ws = { send: vi.fn() };
+    const ctx = makeCtx([ws]);
+    const sync = new DurableSync({ players: new Map<string, number>() }, ctx);
+    sync.state.players.set("p1", 1);
+    sync.state.players.set("p1", 2);
+    await sync.alarm();
+    expect(ws.send).toHaveBeenCalledTimes(1);
+    const patch = JSON.parse(ws.send.mock.calls[0][0] as string);
+    expect(Array.isArray(patch.data["players"])).toBe(true);
+    expect(patch.data["players"]).toEqual([
+      { op: "set", key: "p1", value: 1 },
+      { op: "set", key: "p1", value: 2 },
+    ]);
   });
 });
