@@ -6,12 +6,14 @@ export class DurableSync<T extends object> {
   private alarmScheduled = false;
   private proxyCache = new WeakMap<object, object>();
   private mapProxyCache = new Map<string, Map<unknown, unknown>>();
+  private rawTarget: T;
   readonly state: T;
 
   constructor(
     initial: T,
     private ctx: DurableObjectState,
   ) {
+    this.rawTarget = initial;
     this.state = this.proxify(initial, "") as T;
   }
 
