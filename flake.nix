@@ -17,6 +17,7 @@
             nodejs_24
             pnpm
             wrangler
+            lefthook
           ];
         };
       });
