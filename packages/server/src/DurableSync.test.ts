@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { DurableSync } from "./DurableSync";
 
 type MockWs = { send: ReturnType<typeof vi.fn> };
@@ -174,5 +174,54 @@ describe("alarm 再スケジュール", () => {
     await sync.alarm();
     const afterCount = (ctx.storage.setAlarm as ReturnType<typeof vi.fn>).mock.calls.length;
     expect(afterCount).toBe(beforeCount);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 5. ネストしたオブジェクトの Proxy 化（020）
+// ---------------------------------------------------------------------------
+describe("ネストしたオブジェクトの Proxy 化", () => {
+  it("5-1: ネストした代入が state に反映される", () => {
+    const ctx = makeCtx();
+    const sync = new DurableSync({ player: { x: 0, y: 0 } }, ctx);
+    sync.state.player.x = 10;
+    expect(sync.state.player.x).toBe(10);
+  });
+
+  it("5-2: ネストした代入がパッチに含まれる（パスがキー）", async () => {
+    const ws = { send: vi.fn() };
+    const ctx = makeCtx([ws]);
+    const sync = new DurableSync({ player: { x: 0, y: 0 } }, ctx);
+    sync.state.player.x = 10;
+    await sync.alarm();
+    const patch = JSON.parse(ws.send.mock.calls[0][0] as string);
+    expect(patch.data).toHaveProperty("player.x", 10);
+  });
+
+  it("5-3: 深さ2以上のネストも正しく伝播する", async () => {
+    const ws = { send: vi.fn() };
+    const ctx = makeCtx([ws]);
+    const sync = new DurableSync({ a: { b: { c: 0 } } }, ctx);
+    sync.state.a.b.c = 99;
+    await sync.alarm();
+    const patch = JSON.parse(ws.send.mock.calls[0][0] as string);
+    expect(patch.data).toHaveProperty("a.b.c", 99);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 6. WeakMap キャッシュによる参照等価性（021）
+// ---------------------------------------------------------------------------
+describe("WeakMap キャッシュによる参照等価性", () => {
+  it("6-1: 同じネストオブジェクトへのアクセスは同一 Proxy を返す", () => {
+    const ctx = makeCtx();
+    const sync = new DurableSync({ player: { x: 0 } }, ctx);
+    expect(sync.state.player).toBe(sync.state.player);
+  });
+
+  it("6-2: Proxy 越しに取得した値は元の値と等しい", () => {
+    const ctx = makeCtx();
+    const sync = new DurableSync({ player: { x: 42 } }, ctx);
+    expect(sync.state.player.x).toBe(42);
   });
 });
