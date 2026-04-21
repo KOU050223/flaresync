@@ -4,12 +4,25 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "lint": "eslint \"packages/*/src/**/*.ts\" \"examples/*/src/**/*.ts\"",
+    "lint:fix": "eslint --fix \"packages/*/src/**/*.ts\" \"examples/*/src/**/*.ts\"",
+    "format": "prettier --write \"**/*.{ts,mts,json}\"",
+    "format:check": "prettier --check \"**/*.{ts,mts,json}\"",
+    "knip": "knip",
+    "prepare": "lefthook install"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "packageManager": "pnpm@10.33.0",
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.2.1",
+    "eslint-plugin-n": "^17.24.0",
+    "knip": "^6.6.0",
+    "lefthook": "^2.1.6",
+    "prettier": "^3.8.3",
+    "typescript-eslint": "^8.59.0",
     "vitest": "^4.1.4"
   }
 }
