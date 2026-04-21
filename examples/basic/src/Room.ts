@@ -6,14 +6,15 @@ interface Env {
   ASSETS: Fetcher;
 }
 
-type State = { hp: number; tick: number };
+type Player = { x: number; y: number };
+type State = { hp: number; tick: number; players: Map<string, Player> };
 
 export class BattleRoom extends DurableObject {
   private sync: DurableSync<State>;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
-    this.sync = new DurableSync<State>({ hp: 100, tick: 0 }, ctx);
+    this.sync = new DurableSync<State>({ hp: 100, tick: 0, players: new Map() }, ctx);
   }
 
   async fetch(request: Request): Promise<Response> {
@@ -23,16 +24,47 @@ export class BattleRoom extends DurableObject {
       const { 0: client, 1: server } = new WebSocketPair();
       this.ctx.acceptWebSocket(server);
 
-      const initial = JSON.stringify({ type: "init", data: this.sync.state });
-      server.send(initial);
+      // Mapはそのままでは JSON.stringify できないため変換して送る
+      const initData = {
+        hp: this.sync.state.hp,
+        tick: this.sync.state.tick,
+        players: Object.fromEntries(this.sync.state.players),
+      };
+      server.send(JSON.stringify({ type: "init", data: initData }));
 
       return new Response(null, { status: 101, webSocket: client });
     }
 
     if (url.pathname === "/damage" && request.method === "POST") {
-      const amount = Number(new URL(request.url).searchParams.get("amount") ?? 10);
+      const amount = Number(url.searchParams.get("amount") ?? 10);
       this.sync.state.hp -= amount;
       this.sync.state.tick += 1;
+      return new Response("ok");
+    }
+
+    if (url.pathname === "/join" && request.method === "POST") {
+      const id = url.searchParams.get("id") ?? `p${Date.now()}`;
+      this.sync.state.players.set(id, { x: 0, y: 0 });
+      return new Response(JSON.stringify({ id }), {
+        headers: { "Content-Type": "application/json" },
+      });
+    }
+
+    if (url.pathname === "/move" && request.method === "POST") {
+      const id = url.searchParams.get("id");
+      const x = Number(url.searchParams.get("x") ?? 0);
+      const y = Number(url.searchParams.get("y") ?? 0);
+      if (!id) return new Response("id required", { status: 400 });
+      const player = this.sync.state.players.get(id as string);
+      if (!player) return new Response("player not found", { status: 404 });
+      this.sync.state.players.set(id as string, { x, y });
+      return new Response("ok");
+    }
+
+    if (url.pathname === "/leave" && request.method === "POST") {
+      const id = url.searchParams.get("id");
+      if (!id) return new Response("id required", { status: 400 });
+      this.sync.state.players.delete(id as string);
       return new Response("ok");
     }
 
