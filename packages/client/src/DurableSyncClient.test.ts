@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { pack } from "msgpackr";
 import { DurableSyncClient } from "./DurableSyncClient";
 
 type MockWs = {
@@ -36,7 +37,8 @@ beforeEach(() => {
 });
 
 function sendPatch(data: Record<string, unknown>) {
-  mockWs.emit("message", { data: JSON.stringify({ type: "patch", data }) } as MessageEvent);
+  const buf = pack({ type: "patch", data }).buffer;
+  mockWs.emit("message", { data: buf } as MessageEvent);
 }
 
 // ---------------------------------------------------------------------------
