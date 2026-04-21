@@ -138,6 +138,7 @@ export class DurableSync<T extends object> {
   async alarm(): Promise<void> {
     this.alarmScheduled = false;
     await this.broadcastDirtyKeys();
+    await this.ctx.storage.put("__state", this.rawTarget);
     if (this.ctx.getWebSockets().length > 0) {
       this.alarmScheduled = true;
       await this.ctx.storage.setAlarm(Date.now() + 50);
