@@ -308,3 +308,34 @@ describe("永続化 — storage からの復元", () => {
     expect(patch.data).toHaveProperty("hp", 30);
   });
 });
+
+// ---------------------------------------------------------------------------
+// 10. 永続化 — storage への保存（031）
+// ---------------------------------------------------------------------------
+describe("永続化 — storage への保存", () => {
+  it("10-1: alarm 後に storage.put('__state', state) が呼ばれる", async () => {
+    const ctx = makeCtx([], undefined);
+    const sync = await DurableSync.create({ hp: 100 }, ctx);
+    sync.state.hp = 90;
+    await sync.alarm();
+    expect(ctx.storage.put).toHaveBeenCalledWith("__state", expect.objectContaining({ hp: 90 }));
+  });
+
+  it("10-2: dirty なし（変更なし）でも alarm 後に storage.put が呼ばれる", async () => {
+    const ctx = makeCtx([], undefined);
+    const sync = await DurableSync.create({ hp: 100 }, ctx);
+    await sync.alarm();
+    expect(ctx.storage.put).toHaveBeenCalledWith("__state", expect.objectContaining({ hp: 100 }));
+  });
+
+  it("10-3: 複数回の alarm で storage.put がそのつど呼ばれる", async () => {
+    const ws = { send: vi.fn() };
+    const ctx = makeCtx([ws], undefined);
+    const sync = await DurableSync.create({ hp: 100 }, ctx);
+    sync.state.hp = 80;
+    await sync.alarm();
+    sync.state.hp = 60;
+    await sync.alarm();
+    expect(ctx.storage.put).toHaveBeenCalledTimes(2);
+  });
+});
