@@ -37,7 +37,9 @@ beforeEach(() => {
 });
 
 function sendPatch(data: Record<string, unknown>) {
-  const buf = pack({ type: "patch", data }).buffer;
+  const u8 = pack({ type: "patch", data });
+  // Node の Buffer は共有 ArrayBuffer を持つため slice でコピーして渡す
+  const buf = u8.buffer.slice(u8.byteOffset, u8.byteOffset + u8.byteLength);
   mockWs.emit("message", { data: buf } as MessageEvent);
 }
 

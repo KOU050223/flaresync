@@ -1,3 +1,5 @@
+import { pack } from "msgpackr";
+
 type MapPatch = { op: "set"; key: unknown; value: unknown } | { op: "delete"; key: unknown };
 
 export class DurableSync<T extends object> {
@@ -131,7 +133,7 @@ export class DurableSync<T extends object> {
     this.dirtyKeys.clear();
     this.dirtyMapPatches.clear();
 
-    const message = JSON.stringify({ type: "patch", data: patch });
+    const message = pack({ type: "patch", data: patch });
     for (const ws of this.ctx.getWebSockets()) {
       ws.send(message);
     }
