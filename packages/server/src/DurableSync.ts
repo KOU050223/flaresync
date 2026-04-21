@@ -15,6 +15,14 @@ export class DurableSync<T extends object> {
     this.state = this.proxify(initial, "") as T;
   }
 
+  static async create<T extends object>(
+    initial: T,
+    ctx: DurableObjectState,
+  ): Promise<DurableSync<T>> {
+    const stored = await ctx.storage.get<T>("__state");
+    return new DurableSync<T>(stored ?? initial, ctx);
+  }
+
   private markDirty(): void {
     if (!this.alarmScheduled) {
       this.alarmScheduled = true;
