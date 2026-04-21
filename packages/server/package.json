@@ -47,5 +47,8 @@
     "tsup": "^8.0.0",
     "typescript": "^6.0.0",
     "vitest": "^4.1.4"
+  },
+  "dependencies": {
+    "msgpackr": "^1.11.10"
   }
 }
