@@ -16,22 +16,35 @@
   ],
   "scripts": {
     "build": "tsup",
-    "dev": "tsup --watch"
+    "dev": "tsup --watch",
+    "test": "vitest run --reporter=verbose",
+    "test:watch": "vitest"
   },
   "tsup": {
-    "entry": ["src/index.ts"],
-    "format": ["esm", "cjs"],
+    "entry": [
+      "src/index.ts"
+    ],
+    "format": [
+      "esm",
+      "cjs"
+    ],
     "dts": true,
     "sourcemap": true,
     "clean": true,
     "splitting": false
   },
-  "keywords": ["cloudflare", "durable-objects", "sync", "websocket"],
+  "keywords": [
+    "cloudflare",
+    "durable-objects",
+    "sync",
+    "websocket"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
     "@cloudflare/workers-types": "^4.0.0",
     "tsup": "^8.0.0",
-    "typescript": "^6.0.0"
+    "typescript": "^6.0.0",
+    "vitest": "^4.1.4"
   }
 }
