@@ -225,3 +225,50 @@ describe("WeakMap キャッシュによる参照等価性", () => {
     expect(sync.state.player.x).toBe(42);
   });
 });
+
+// ---------------------------------------------------------------------------
+// 7. MapProxy — Map の set / delete 検知（022 / 023）
+// ---------------------------------------------------------------------------
+describe("MapProxy — Map の set / delete 検知", () => {
+  it("7-1: Map.set() がパッチに op:'set' で届く", async () => {
+    const ws = { send: vi.fn() };
+    const ctx = makeCtx([ws]);
+    const sync = new DurableSync({ players: new Map<string, { x: number }>() }, ctx);
+    sync.state.players.set("p1", { x: 5 });
+    await sync.alarm();
+    const patch = JSON.parse(ws.send.mock.calls[0][0] as string);
+    expect(patch.data["players"]).toEqual({ op: "set", key: "p1", value: { x: 5 } });
+  });
+
+  it("7-2: Map.delete() がパッチに op:'delete' で届く", async () => {
+    const ws = { send: vi.fn() };
+    const ctx = makeCtx([ws]);
+    const sync = new DurableSync(
+      { players: new Map<string, { x: number }>([["p1", { x: 5 }]]) },
+      ctx,
+    );
+    sync.state.players.delete("p1");
+    await sync.alarm();
+    const patch = JSON.parse(ws.send.mock.calls[0][0] as string);
+    expect(patch.data["players"]).toEqual({ op: "delete", key: "p1" });
+  });
+
+  it("7-3: Map.set() 後の get() は更新された値を返す", () => {
+    const ctx = makeCtx();
+    const sync = new DurableSync({ players: new Map<string, number>() }, ctx);
+    sync.state.players.set("p1", 99);
+    expect(sync.state.players.get("p1")).toBe(99);
+  });
+
+  it("7-4: 同一ティック内の複数 Map.set() は最後の操作だけパッチに入る", async () => {
+    const ws = { send: vi.fn() };
+    const ctx = makeCtx([ws]);
+    const sync = new DurableSync({ players: new Map<string, number>() }, ctx);
+    sync.state.players.set("p1", 1);
+    sync.state.players.set("p1", 2);
+    await sync.alarm();
+    expect(ws.send).toHaveBeenCalledTimes(1);
+    const patch = JSON.parse(ws.send.mock.calls[0][0] as string);
+    expect(patch.data["players"].value).toBe(2);
+  });
+});

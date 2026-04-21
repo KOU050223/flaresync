@@ -1,5 +1,8 @@
+type MapPatch = { op: "set"; key: unknown; value: unknown } | { op: "delete"; key: unknown };
+
 export class DurableSync<T extends object> {
   private dirtyKeys = new Set<string>();
+  private dirtyMapPatches = new Map<string, MapPatch>();
   private alarmScheduled = false;
   private proxyCache = new WeakMap<object, object>();
   readonly state: T;
@@ -18,6 +21,31 @@ export class DurableSync<T extends object> {
     }
   }
 
+  private proxifyMap(map: Map<unknown, unknown>, path: string): Map<unknown, unknown> {
+    return new Proxy(map, {
+      get: (target, prop) => {
+        if (prop === "set") {
+          return (key: unknown, value: unknown) => {
+            target.set(key, value);
+            this.dirtyMapPatches.set(path, { op: "set", key, value });
+            this.dirtyKeys.add(path);
+            this.markDirty();
+          };
+        }
+        if (prop === "delete") {
+          return (key: unknown) => {
+            target.delete(key);
+            this.dirtyMapPatches.set(path, { op: "delete", key });
+            this.dirtyKeys.add(path);
+            this.markDirty();
+          };
+        }
+        const val = Reflect.get(target, prop, target);
+        return typeof val === "function" ? val.bind(target) : val;
+      },
+    });
+  }
+
   private proxify(obj: object, basePath: string): object {
     if (this.proxyCache.has(obj)) return this.proxyCache.get(obj)!;
 
@@ -25,6 +53,10 @@ export class DurableSync<T extends object> {
       get: (target, prop) => {
         if (typeof prop !== "string") return Reflect.get(target, prop);
         const val = (target as Record<string, unknown>)[prop];
+        if (val instanceof Map) {
+          const path = basePath ? `${basePath}.${prop}` : prop;
+          return this.proxifyMap(val as Map<unknown, unknown>, path);
+        }
         if (val !== null && typeof val === "object") {
           const path = basePath ? `${basePath}.${prop}` : prop;
           return this.proxify(val as object, path);
@@ -50,7 +82,11 @@ export class DurableSync<T extends object> {
     const keys = path.split(".");
     let cur: unknown = this.state;
     for (const k of keys) {
-      cur = (cur as Record<string, unknown>)[k];
+      if (cur instanceof Map) {
+        cur = cur.get(k);
+      } else {
+        cur = (cur as Record<string, unknown>)[k];
+      }
       if (cur === undefined) return undefined;
     }
     return cur;
@@ -61,9 +97,14 @@ export class DurableSync<T extends object> {
 
     const patch: Record<string, unknown> = {};
     for (const path of this.dirtyKeys) {
-      patch[path] = this.getNestedValue(path);
+      if (this.dirtyMapPatches.has(path)) {
+        patch[path] = this.dirtyMapPatches.get(path);
+      } else {
+        patch[path] = this.getNestedValue(path);
+      }
     }
     this.dirtyKeys.clear();
+    this.dirtyMapPatches.clear();
 
     const message = JSON.stringify({ type: "patch", data: patch });
     for (const ws of this.ctx.getWebSockets()) {
