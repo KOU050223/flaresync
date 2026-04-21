@@ -18,7 +18,8 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "test": "vitest run --reporter=verbose",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
   },
   "tsup": {
     "entry": [

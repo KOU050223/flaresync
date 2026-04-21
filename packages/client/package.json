@@ -16,17 +16,29 @@
   ],
   "scripts": {
     "build": "tsup",
-    "dev": "tsup --watch"
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit"
   },
   "tsup": {
-    "entry": ["src/index.ts"],
-    "format": ["esm", "cjs"],
+    "entry": [
+      "src/index.ts"
+    ],
+    "format": [
+      "esm",
+      "cjs"
+    ],
     "dts": true,
     "sourcemap": true,
     "clean": true,
     "splitting": false
   },
-  "keywords": ["cloudflare", "durable-objects", "sync", "websocket", "client"],
+  "keywords": [
+    "cloudflare",
+    "durable-objects",
+    "sync",
+    "websocket",
+    "client"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {

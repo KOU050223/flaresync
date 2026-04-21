@@ -3,7 +3,10 @@ export class DurableSync<T extends object> {
   private alarmScheduled = false;
   readonly state: T;
 
-  constructor(initial: T, private ctx: DurableObjectState) {
+  constructor(
+    initial: T,
+    private ctx: DurableObjectState,
+  ) {
     this.state = this.proxify(initial) as T;
   }
 

@@ -2,8 +2,8 @@
   "name": "flaresync",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
+    "typecheck": "pnpm --filter !flaresync-client -r run typecheck",
     "lint": "eslint \"packages/*/src/**/*.ts\" \"examples/*/src/**/*.ts\"",
     "lint:fix": "eslint --fix \"packages/*/src/**/*.ts\" \"examples/*/src/**/*.ts\"",
     "format": "prettier --write \"**/*.{ts,mts,json}\"",
