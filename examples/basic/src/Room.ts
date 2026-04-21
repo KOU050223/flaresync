@@ -9,7 +9,7 @@ interface Env {
 type Player = { x: number; y: number };
 type State = { hp: number; tick: number; players: Map<string, Player> };
 
-export class BattleRoom extends DurableObject {
+export class BattleRoom extends DurableObject<Env> {
   private sync: DurableSync<State> | undefined;
   private syncPromise: Promise<DurableSync<State>> | undefined;
 
