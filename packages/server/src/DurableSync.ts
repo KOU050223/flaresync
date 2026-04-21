@@ -2,9 +2,10 @@ type MapPatch = { op: "set"; key: unknown; value: unknown } | { op: "delete"; ke
 
 export class DurableSync<T extends object> {
   private dirtyKeys = new Set<string>();
-  private dirtyMapPatches = new Map<string, MapPatch>();
+  private dirtyMapPatches = new Map<string, MapPatch[]>();
   private alarmScheduled = false;
   private proxyCache = new WeakMap<object, object>();
+  private mapProxyCache = new Map<string, Map<unknown, unknown>>();
   readonly state: T;
 
   constructor(
@@ -21,29 +22,40 @@ export class DurableSync<T extends object> {
     }
   }
 
+  private addMapPatch(path: string, patch: MapPatch): void {
+    if (!this.dirtyMapPatches.has(path)) this.dirtyMapPatches.set(path, []);
+    this.dirtyMapPatches.get(path)!.push(patch);
+    this.dirtyKeys.add(path);
+    this.markDirty();
+  }
+
   private proxifyMap(map: Map<unknown, unknown>, path: string): Map<unknown, unknown> {
-    return new Proxy(map, {
+    const cached = this.mapProxyCache.get(path);
+    if (cached) return cached;
+
+    const proxy = new Proxy(map, {
       get: (target, prop) => {
         if (prop === "set") {
-          return (key: unknown, value: unknown) => {
+          return (key: unknown, value: unknown): Map<unknown, unknown> => {
             target.set(key, value);
-            this.dirtyMapPatches.set(path, { op: "set", key, value });
-            this.dirtyKeys.add(path);
-            this.markDirty();
+            this.addMapPatch(path, { op: "set", key, value });
+            return proxy;
           };
         }
         if (prop === "delete") {
-          return (key: unknown) => {
-            target.delete(key);
-            this.dirtyMapPatches.set(path, { op: "delete", key });
-            this.dirtyKeys.add(path);
-            this.markDirty();
+          return (key: unknown): boolean => {
+            const deleted = target.delete(key);
+            this.addMapPatch(path, { op: "delete", key });
+            return deleted;
           };
         }
         const val = Reflect.get(target, prop, target);
         return typeof val === "function" ? val.bind(target) : val;
       },
     });
+
+    this.mapProxyCache.set(path, proxy);
+    return proxy;
   }
 
   private proxify(obj: object, basePath: string): object {
@@ -98,7 +110,8 @@ export class DurableSync<T extends object> {
     const patch: Record<string, unknown> = {};
     for (const path of this.dirtyKeys) {
       if (this.dirtyMapPatches.has(path)) {
-        patch[path] = this.dirtyMapPatches.get(path);
+        const patches = this.dirtyMapPatches.get(path)!;
+        patch[path] = patches.length === 1 ? patches[0] : patches;
       } else {
         patch[path] = this.getNestedValue(path);
       }

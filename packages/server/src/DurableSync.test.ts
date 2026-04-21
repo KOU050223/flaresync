@@ -260,7 +260,7 @@ describe("MapProxy — Map の set / delete 検知", () => {
     expect(sync.state.players.get("p1")).toBe(99);
   });
 
-  it("7-4: 同一ティック内の複数 Map.set() は最後の操作だけパッチに入る", async () => {
+  it("7-4: 同一ティック内の複数 Map.set() は全操作が配列でパッチに入る", async () => {
     const ws = { send: vi.fn() };
     const ctx = makeCtx([ws]);
     const sync = new DurableSync({ players: new Map<string, number>() }, ctx);
@@ -269,6 +269,10 @@ describe("MapProxy — Map の set / delete 検知", () => {
     await sync.alarm();
     expect(ws.send).toHaveBeenCalledTimes(1);
     const patch = JSON.parse(ws.send.mock.calls[0][0] as string);
-    expect(patch.data["players"].value).toBe(2);
+    expect(Array.isArray(patch.data["players"])).toBe(true);
+    expect(patch.data["players"]).toEqual([
+      { op: "set", key: "p1", value: 1 },
+      { op: "set", key: "p1", value: 2 },
+    ]);
   });
 });
