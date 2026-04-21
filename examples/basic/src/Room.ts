@@ -52,6 +52,9 @@ export class BattleRoom extends DurableObject {
 
     if (url.pathname === "/damage" && request.method === "POST") {
       const amount = Number(url.searchParams.get("amount") ?? 10);
+      if (!Number.isFinite(amount) || amount <= 0) {
+        return new Response("amount must be a positive number", { status: 400 });
+      }
       sync.state.hp -= amount;
       sync.state.tick += 1;
       return new Response("ok");
