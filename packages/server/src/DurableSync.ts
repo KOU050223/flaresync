@@ -17,6 +17,8 @@ export class DurableSync<T extends object> {
     this.state = this.proxify(initial, "") as T;
   }
 
+  // T に Response・Function など structured-clone 非対応の値を含めると
+  // storage.put / storage.get がランタイムエラーになる点に注意
   static async create<T extends object>(
     initial: T,
     ctx: DurableObjectState,
