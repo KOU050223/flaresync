@@ -23,10 +23,15 @@ export class BattleRoom extends DurableObject {
       this.syncPromise = DurableSync.create<State>(
         { hp: 100, tick: 0, players: new Map() },
         this.ctx,
-      ).then((s) => {
-        this.sync = s;
-        return s;
-      });
+      )
+        .then((s) => {
+          this.sync = s;
+          return s;
+        })
+        .catch((err: unknown) => {
+          this.syncPromise = undefined;
+          throw err;
+        });
     }
     return this.syncPromise;
   }
