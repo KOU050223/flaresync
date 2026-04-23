@@ -64,6 +64,7 @@ export class DurableSyncClient<T extends Record<string, unknown>> {
   private connect(): void {
     if (this.closed) return;
     this.ws = new WebSocket(this.url);
+    this.ws.binaryType = "arraybuffer";
     this.ws.addEventListener("message", (ev) => this.handleMessage(ev));
     this.ws.addEventListener("close", () => {
       if (!this.closed) {

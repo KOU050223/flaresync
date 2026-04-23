@@ -2,7 +2,7 @@
 
 計測日: 2026-04-22  
 実装: `msgpackr@1.11.10`  
-スクリプト: [`scripts/measure-payload.ts`](../scripts/measure-payload.ts)
+スクリプト: [`packages/server/scripts/measure-payload.ts`](../packages/server/scripts/measure-payload.ts)
 
 ## 結果
 

@@ -3,21 +3,18 @@ import { pack } from "msgpackr";
 type MapPatch = { op: "set"; key: string; value: unknown } | { op: "delete"; key: string };
 type PatchMessage = { type: "patch"; data: Record<string, unknown | MapPatch | MapPatch[]> };
 
+const encoder = new TextEncoder();
+
 function measure(label: string, msg: PatchMessage) {
-  const json = JSON.stringify(msg);
+  const jsonBytes = encoder.encode(JSON.stringify(msg)).byteLength;
   const msgpack = pack(msg);
-  const ratio = (((json.length - msgpack.byteLength) / json.length) * 100).toFixed(1);
+  const ratio = (((jsonBytes - msgpack.byteLength) / jsonBytes) * 100).toFixed(1);
   console.log(`${label}`);
-  console.log(`  JSON:       ${json.length} bytes`);
+  console.log(`  JSON:        ${jsonBytes} bytes`);
   console.log(`  MessagePack: ${msgpack.byteLength} bytes`);
   console.log(`  削減率:      ${ratio}%`);
   console.log();
-  return {
-    label,
-    jsonBytes: json.length,
-    msgpackBytes: msgpack.byteLength,
-    reductionPct: Number(ratio),
-  };
+  return { label, jsonBytes, msgpackBytes: msgpack.byteLength, reductionPct: Number(ratio) };
 }
 
 const results = [
@@ -63,6 +60,5 @@ const results = [
   }),
 ];
 
-// サマリー
 const avgReduction = results.reduce((sum, r) => sum + r.reductionPct, 0) / results.length;
 console.log(`平均削減率: ${avgReduction.toFixed(1)}%`);
