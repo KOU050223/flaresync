@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { pack } from "msgpackr";
 import { DurableSyncClient } from "./DurableSyncClient";
 
 type MockWs = {
@@ -36,7 +37,10 @@ beforeEach(() => {
 });
 
 function sendPatch(data: Record<string, unknown>) {
-  mockWs.emit("message", { data: JSON.stringify({ type: "patch", data }) } as MessageEvent);
+  const u8 = pack({ type: "patch", data });
+  // Node の Buffer は共有 ArrayBuffer を持つため slice でコピーして渡す
+  const buf = u8.buffer.slice(u8.byteOffset, u8.byteOffset + u8.byteLength);
+  mockWs.emit("message", { data: buf } as MessageEvent);
 }
 
 // ---------------------------------------------------------------------------

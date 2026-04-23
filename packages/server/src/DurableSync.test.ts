@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
+import { unpack } from "msgpackr";
 import { DurableSync } from "./DurableSync";
 
 type MockWs = { send: ReturnType<typeof vi.fn> };
@@ -15,7 +16,7 @@ function makeCtx(wsSockets: MockWs[] = [], storedState?: unknown) {
 }
 
 function sentPatches(ws: MockWs) {
-  return ws.send.mock.calls.map((args) => JSON.parse(args[0] as string));
+  return ws.send.mock.calls.map((args) => unpack(args[0] as Uint8Array));
 }
 
 // ---------------------------------------------------------------------------
@@ -142,7 +143,7 @@ describe("broadcastDirtyKeys / 送信内容", () => {
     expect(ws.send).not.toHaveBeenCalled();
   });
 
-  it("3-5: 送信 JSON が { type: 'patch', data: { ... } } の構造を持つ", async () => {
+  it("3-5: 送信メッセージが { type: 'patch', data: { ... } } の構造を持つ", async () => {
     const ws = { send: vi.fn() };
     const ctx = makeCtx([ws]);
     const sync = new DurableSync({ hp: 100 }, ctx);
@@ -152,6 +153,16 @@ describe("broadcastDirtyKeys / 送信内容", () => {
     expect(msg).toHaveProperty("type", "patch");
     expect(msg).toHaveProperty("data");
     expect(typeof msg.data).toBe("object");
+  });
+
+  it("3-6: 送信メッセージが Uint8Array（バイナリ）で送られる", async () => {
+    const ws = { send: vi.fn() };
+    const ctx = makeCtx([ws]);
+    const sync = new DurableSync({ hp: 100 }, ctx);
+    sync.state.hp = 90;
+    await sync.alarm();
+    const sent = ws.send.mock.calls[0]![0];
+    expect(sent).toBeInstanceOf(Uint8Array);
   });
 });
 
@@ -198,8 +209,7 @@ describe("ネストしたオブジェクトの Proxy 化", () => {
     const sync = new DurableSync({ player: { x: 0, y: 0 } }, ctx);
     sync.state.player.x = 10;
     await sync.alarm();
-    const patch = JSON.parse(ws.send.mock.calls[0][0] as string);
-    expect(patch.data).toHaveProperty("player.x", 10);
+    expect(sentPatches(ws)[0].data).toHaveProperty("player.x", 10);
   });
 
   it("5-3: 深さ2以上のネストも正しく伝播する", async () => {
@@ -208,8 +218,7 @@ describe("ネストしたオブジェクトの Proxy 化", () => {
     const sync = new DurableSync({ a: { b: { c: 0 } } }, ctx);
     sync.state.a.b.c = 99;
     await sync.alarm();
-    const patch = JSON.parse(ws.send.mock.calls[0][0] as string);
-    expect(patch.data).toHaveProperty("a.b.c", 99);
+    expect(sentPatches(ws)[0].data).toHaveProperty("a.b.c", 99);
   });
 });
 
@@ -240,8 +249,7 @@ describe("MapProxy — Map の set / delete 検知", () => {
     const sync = new DurableSync({ players: new Map<string, { x: number }>() }, ctx);
     sync.state.players.set("p1", { x: 5 });
     await sync.alarm();
-    const patch = JSON.parse(ws.send.mock.calls[0][0] as string);
-    expect(patch.data["players"]).toEqual({ op: "set", key: "p1", value: { x: 5 } });
+    expect(sentPatches(ws)[0].data["players"]).toEqual({ op: "set", key: "p1", value: { x: 5 } });
   });
 
   it("7-2: Map.delete() がパッチに op:'delete' で届く", async () => {
@@ -253,8 +261,7 @@ describe("MapProxy — Map の set / delete 検知", () => {
     );
     sync.state.players.delete("p1");
     await sync.alarm();
-    const patch = JSON.parse(ws.send.mock.calls[0][0] as string);
-    expect(patch.data["players"]).toEqual({ op: "delete", key: "p1" });
+    expect(sentPatches(ws)[0].data["players"]).toEqual({ op: "delete", key: "p1" });
   });
 
   it("7-3: Map.set() 後の get() は更新された値を返す", () => {
@@ -272,7 +279,7 @@ describe("MapProxy — Map の set / delete 検知", () => {
     sync.state.players.set("p1", 2);
     await sync.alarm();
     expect(ws.send).toHaveBeenCalledTimes(1);
-    const patch = JSON.parse(ws.send.mock.calls[0][0] as string);
+    const patch = sentPatches(ws)[0];
     expect(Array.isArray(patch.data["players"])).toBe(true);
     expect(patch.data["players"]).toEqual([
       { op: "set", key: "p1", value: 1 },
@@ -304,8 +311,7 @@ describe("永続化 — storage からの復元", () => {
     const sync = await DurableSync.create({ hp: 100 }, ctx);
     sync.state.hp = 30;
     await sync.alarm();
-    const patch = JSON.parse(ws.send.mock.calls[0][0] as string);
-    expect(patch.data).toHaveProperty("hp", 30);
+    expect(sentPatches(ws)[0].data).toHaveProperty("hp", 30);
   });
 });
 

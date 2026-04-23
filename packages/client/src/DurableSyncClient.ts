@@ -1,3 +1,5 @@
+import { unpack } from "msgpackr";
+
 type MapPatch = { op: "set"; key: string; value: unknown } | { op: "delete"; key: string };
 
 type PatchMessage = {
@@ -62,6 +64,7 @@ export class DurableSyncClient<T extends Record<string, unknown>> {
   private connect(): void {
     if (this.closed) return;
     this.ws = new WebSocket(this.url);
+    this.ws.binaryType = "arraybuffer";
     this.ws.addEventListener("message", (ev) => this.handleMessage(ev));
     this.ws.addEventListener("close", () => {
       if (!this.closed) {
@@ -73,7 +76,7 @@ export class DurableSyncClient<T extends Record<string, unknown>> {
   private handleMessage(ev: MessageEvent): void {
     let msg: PatchMessage;
     try {
-      msg = JSON.parse(ev.data as string) as PatchMessage;
+      msg = unpack(new Uint8Array(ev.data as ArrayBuffer)) as PatchMessage;
     } catch {
       return;
     }
