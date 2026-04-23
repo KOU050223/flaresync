@@ -1,5 +1,9 @@
 # flaresync
 
+[![npm version](https://img.shields.io/npm/v/flaresync)](https://www.npmjs.com/package/flaresync)
+[![npm version](https://img.shields.io/npm/v/flaresync-client?label=flaresync-client)](https://www.npmjs.com/package/flaresync-client)
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+
 Cloudflare Durable Objects 専用の状態同期ライブラリ。サーバー側で変数に代入するだけで、接続中の全クライアントに差分が届く。
 
 ```typescript
@@ -13,6 +17,12 @@ this.state.hp -= 10;
 ```bash
 npm install flaresync          # サーバー（DO）側
 npm install flaresync-client   # クライアント側
+```
+
+`flaresync` は `@cloudflare/workers-types` を peer dependency として使用します。Cloudflare Workers プロジェクトではすでにインストール済みのはずですが、もし未インストールの場合は別途追加してください。
+
+```bash
+npm install -D @cloudflare/workers-types
 ```
 
 ## 最小サンプル
@@ -81,16 +91,17 @@ new_classes = ["BattleRoom"]
 - **代入するだけ** — `send` / `broadcast` を一行も書かなくていい
 - **ティックベース配信** — `alarm()` API で 50ms ごとに差分をまとめて送信
 - **型安全** — TypeScript ジェネリクスでタイポをコンパイル時に検出
+- **MessagePack 通信** — JSON より小さいバイナリ形式で通信量を削減
 - **Cloudflare 特化** — `getWebSockets()` / `alarm()` / `ctx.storage` をフル活用
 
 ## ロードマップ
 
 - [x] Phase 0 — リポジトリ基盤
-- [ ] Phase 1 — フラットなオブジェクトの同期
-- [ ] Phase 2 — ネストと Map 対応
-- [ ] Phase 3 — 永続化
-- [ ] Phase 4 — バイナリ通信（MessagePack）
-- [ ] Phase 5 — npm 公開
+- [x] Phase 1 — フラットなオブジェクトの同期
+- [x] Phase 2 — ネストと Map 対応
+- [x] Phase 3 — 永続化
+- [x] Phase 4 — バイナリ通信（MessagePack）
+- [x] Phase 5 — npm 公開
 
 ## ライセンス
 

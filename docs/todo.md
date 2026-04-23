@@ -59,9 +59,9 @@
 
 ## Phase 5 — npm公開
 
-- [ ] 050: `README.md` を書く（インストール・wrangler.toml設定・最小サンプルコード）
-- [ ] 051: `packages/server` / `packages/client` の公開ファイルを `package.json#files` で絞る
-- [ ] 052: GitHub Actions で `tsc --noEmit` と `wrangler deploy --dry-run` を回すCIを設定
-- [ ] 053: `npm publish --dry-run` で公開内容を確認してから `0.1.0` を公開
-- [ ] 054: `examples/basic` を Cloudflare Workers にデプロイしてデモURLを作る
-- [ ] 055: XやZennで告知
+- [x] 050: `README.md` を書く（インストール・wrangler.toml設定・最小サンプルコード）
+- [x] 051: `packages/server` / `packages/client` の公開ファイルを `package.json#files` で絞る
+- [x] 052: GitHub Actions で `tsc --noEmit` と `wrangler deploy --dry-run` を回すCIを設定
+- [x] 053: `npm publish --dry-run` で公開内容を確認してから `0.1.0` を公開（changesets による自動 publish フロー整備済み。`NPM_TOKEN` secret 設定後に Release PR をマージして実行）
+- [ ] 054: `examples/basic` を Cloudflare Workers にデプロイしてデモURLを作る（別PR対応）
+- [ ] 055: XやZennで告知（別作業）
