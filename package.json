@@ -1,9 +1,11 @@
 {
-  "name": "flaresync",
+  "name": "flaresync-repo",
   "version": "1.0.0",
-  "description": "",
+  "description": "Durable Object state sync library for Cloudflare Workers (monorepo root)",
+  "private": true,
   "scripts": {
-    "typecheck": "pnpm --filter !flaresync-client -r run typecheck",
+    "typecheck": "pnpm -r --filter \"./packages/*\" --filter \"./examples/*\" run typecheck",
+    "build": "pnpm -r --filter \"./packages/*\" run build",
     "lint": "eslint \"packages/*/src/**/*.ts\" \"examples/*/src/**/*.ts\"",
     "lint:fix": "eslint --fix \"packages/*/src/**/*.ts\" \"examples/*/src/**/*.ts\"",
     "format": "prettier --write \"**/*.{ts,mts,json}\"",
@@ -12,10 +14,11 @@
     "prepare": "lefthook install"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "KOU050223 <kouhei20050223@icloud.com>",
+  "license": "MIT",
   "packageManager": "pnpm@10.33.0",
   "devDependencies": {
+    "@changesets/cli": "^2.31.0",
     "@eslint/js": "^10.0.1",
     "eslint": "^10.2.1",
     "eslint-plugin-n": "^17.24.0",

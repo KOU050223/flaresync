@@ -1,9 +1,31 @@
 {
   "name": "flaresync-client",
   "version": "0.1.0",
-  "description": "Client library for flaresync Durable Object state sync",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "description": "Client library for flaresync — WebSocket-based Durable Object state sync for browsers and Node.js.",
+  "keywords": [
+    "cloudflare",
+    "durable-objects",
+    "sync",
+    "websocket",
+    "client",
+    "realtime",
+    "game"
+  ],
+  "homepage": "https://github.com/KOU050223/flaresync#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KOU050223/flaresync.git",
+    "directory": "packages/client"
+  },
+  "bugs": {
+    "url": "https://github.com/KOU050223/flaresync/issues"
+  },
+  "license": "MIT",
+  "author": "KOU050223 <kouhei20050223@icloud.com>",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -12,43 +34,31 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
     "test": "vitest run --reporter=verbose",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "pnpm build"
   },
-  "tsup": {
-    "entry": [
-      "src/index.ts"
-    ],
-    "format": [
-      "esm",
-      "cjs"
-    ],
-    "dts": true,
-    "sourcemap": true,
-    "clean": true,
-    "splitting": false
+  "dependencies": {
+    "msgpackr": "^1.11.10"
   },
-  "keywords": [
-    "cloudflare",
-    "durable-objects",
-    "sync",
-    "websocket",
-    "client"
-  ],
-  "author": "",
-  "license": "MIT",
   "devDependencies": {
     "tsup": "^8.0.0",
     "typescript": "^6.0.0",
     "vitest": "^4.1.4"
-  },
-  "dependencies": {
-    "msgpackr": "^1.11.10"
   }
 }
