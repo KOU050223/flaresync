@@ -6,7 +6,8 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "build": "tsc",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "wrangler:dryrun": "wrangler deploy --dry-run"
   },
   "dependencies": {
     "flaresync": "workspace:*"
