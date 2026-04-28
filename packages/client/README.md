@@ -16,7 +16,9 @@ npm install flaresync-client
 ```typescript
 import { DurableSyncClient } from "flaresync-client";
 
-const client = new DurableSyncClient("wss://your-worker.example.com/room");
+const client = new DurableSyncClient("wss://your-worker.example.com/room", {
+  hp: 100,
+});
 
 client.onChange((state) => {
   console.log("state updated:", state);
