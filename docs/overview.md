@@ -36,6 +36,11 @@ this.state.hp -= 10;
 ## パッケージ名
 
 ```
-npm install flaresync          # サーバー（DO）側
-npm install flaresync/client   # クライアント側
+npm install flaresync
+```
+
+クライアント側は `flaresync/client` サブパスから import します（別途インストール不要）。
+
+```typescript
+import { DurableSyncClient } from "flaresync/client";
 ```

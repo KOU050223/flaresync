@@ -1,13 +1,28 @@
 import { defineConfig } from "tsup";
 
-export default defineConfig({
-  entry: ["src/index.ts"],
-  format: ["esm", "cjs"],
-  outExtension({ format }) {
-    return { js: format === "cjs" ? ".cjs" : ".js" };
+export default defineConfig([
+  {
+    entry: { index: "src/index.ts" },
+    format: ["esm", "cjs"],
+    outExtension({ format }) {
+      return { js: format === "cjs" ? ".cjs" : ".js" };
+    },
+    dts: true,
+    sourcemap: true,
+    clean: true,
+    splitting: false,
+    tsconfig: "./tsconfig.json",
   },
-  dts: true,
-  sourcemap: true,
-  clean: true,
-  splitting: false,
-});
+  {
+    entry: { "client/index": "src/client/index.ts" },
+    format: ["esm", "cjs"],
+    outExtension({ format }) {
+      return { js: format === "cjs" ? ".cjs" : ".js" };
+    },
+    dts: true,
+    sourcemap: true,
+    clean: false,
+    splitting: false,
+    tsconfig: "./tsconfig.client.json",
+  },
+]);

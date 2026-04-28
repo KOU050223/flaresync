@@ -62,7 +62,19 @@ tag = "v1"
 new_classes = ["BattleRoom"]
 ```
 
-クライアント側は [`flaresync-client`](https://www.npmjs.com/package/flaresync-client) を参照してください。
+### クライアント（ブラウザ / Node.js）
+
+```typescript
+import { DurableSyncClient } from "flaresync/client";
+
+const client = new DurableSyncClient("wss://your-worker.example.com/room", {
+  hp: 100,
+});
+
+client.onChange((state) => {
+  console.log("hp:", state.hp);
+});
+```
 
 ## ライセンス
 

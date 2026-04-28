@@ -1,7 +1,6 @@
 # flaresync
 
 [![npm version](https://img.shields.io/npm/v/flaresync)](https://www.npmjs.com/package/flaresync)
-[![npm version](https://img.shields.io/npm/v/flaresync-client?label=flaresync-client)](https://www.npmjs.com/package/flaresync-client)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 Cloudflare Durable Objects 専用の状態同期ライブラリ。サーバー側で変数に代入するだけで、接続中の全クライアントに差分が届く。
@@ -15,9 +14,10 @@ this.state.hp -= 10;
 ## インストール
 
 ```bash
-npm install flaresync          # サーバー（DO）側
-npm install flaresync-client   # クライアント側
+npm install flaresync
 ```
+
+クライアント側は同じパッケージの `flaresync/client` サブパスから import します（別途インストール不要）。
 
 `flaresync` は `@cloudflare/workers-types` を peer dependency として使用します。Cloudflare Workers プロジェクトではすでにインストール済みのはずですが、もし未インストールの場合は別途追加してください。
 
@@ -62,7 +62,7 @@ export class BattleRoom extends DurableObject {
 ### クライアント
 
 ```typescript
-import { DurableSyncClient } from "flaresync-client";
+import { DurableSyncClient } from "flaresync/client";
 
 const client = new DurableSyncClient("wss://your-worker.example.com/room");
 client.onChange((state) => {

@@ -10,10 +10,6 @@ const config: KnipConfig = {
     "packages/server": {
       project: ["src/**/*.ts", "!src/**/*.test.ts"],
     },
-    "packages/client": {
-      entry: [],
-      project: [],
-    },
     "examples/basic": {
       entry: ["src/**/*.ts"],
       project: ["src/**/*.ts"],

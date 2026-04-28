@@ -30,7 +30,13 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    }
+    },
+    "./client": {
+      "types": "./dist/client/index.d.ts",
+      "import": "./dist/client/index.js",
+      "require": "./dist/client/index.cjs"
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",
@@ -49,7 +55,7 @@
     "dev": "tsup --watch",
     "test": "vitest run --reporter=verbose",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.client.json",
     "prepublishOnly": "pnpm build"
   },
   "peerDependencies": {
