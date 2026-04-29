@@ -4,8 +4,8 @@
 
 Initial release of flaresync v0.1.0
 
-- Cloudflare Durable Objects 向けのリアルタイム状態同期ライブラリ
-- `DurableSync` クラス：Proxy による変更検知 + alarm() で 50ms バッファリング配信
-- `flaresync/client` サブパス：WebSocket クライアント (`DurableSyncClient`)
-- MessagePack (`msgpackr`) によるバイナリ通信
-- changesets による npm publish フロー整備
+- Real-time state sync library for Cloudflare Durable Objects
+- `DurableSync` class: change detection via Proxy + 50ms buffered broadcast using `alarm()`
+- `flaresync/client` subpath export: WebSocket client (`DurableSyncClient`)
+- Binary transport with MessagePack (`msgpackr`)
+- Automated npm publish flow via changesets
