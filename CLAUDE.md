@@ -26,7 +26,7 @@ cd examples/basic && pnpm dev
 
 ## Architecture
 
-pnpm workspace 構成で `packages/server`（npm: `flaresync`）と `packages/client`（npm: `flaresync-client`）を持つ。`examples/basic` は `wrangler dev` で動かす動作確認用サンプル。
+pnpm workspace 構成で `packages/server`（npm: `flaresync` — サーバー用エントリと `flaresync/client` サブパスを両方提供）を持つ。`examples/basic` は `wrangler dev` で動かす動作確認用サンプル。
 
 詳細はドキュメント参照
 

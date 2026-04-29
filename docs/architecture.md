@@ -5,14 +5,13 @@
 ```
 flaresync/
 ├── packages/
-│   ├── server/              # DO側ライブラリ（npm: flaresync）
-│   │   └── src/
-│   │       ├── DurableSync.ts   # コアエンジン
-│   │       └── index.ts
-│   └── client/              # クライアント側ライブラリ（npm: flaresync/client）
+│   └── server/              # npm: flaresync（サーバー + flaresync/client サブパスを提供）
 │       └── src/
-│           ├── DurableSyncClient.ts
-│           └── index.ts
+│           ├── DurableSync.ts   # コアエンジン（Cloudflare Workers 専用）
+│           ├── index.ts
+│           └── client/          # flaresync/client サブパス（ブラウザ / Node.js 用）
+│               ├── DurableSyncClient.ts
+│               └── index.ts
 ├── examples/
 │   └── basic/               # 動作確認用サンプル（wrangler dev で起動）
 │       ├── src/
