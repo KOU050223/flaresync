@@ -1,6 +1,6 @@
 {
   "name": "flaresync",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Durable Object state sync library for Cloudflare Workers — assign a variable, every client gets the diff.",
   "keywords": [
     "cloudflare",
