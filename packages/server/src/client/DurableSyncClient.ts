@@ -10,21 +10,31 @@ type PatchMessage = {
 type ChangeListener<T> = (state: T) => void;
 type KeyChangeListener = (value: unknown) => void;
 
+function isMapPatch(v: unknown): v is MapPatch {
+  return v !== null && typeof v === "object" && "op" in (v as object);
+}
+
+function applyMapOps(existing: unknown, ops: MapPatch[]): Map<string, unknown> {
+  const map: Map<string, unknown> = existing instanceof Map ? new Map(existing) : new Map();
+  for (const op of ops) {
+    if (op.op === "set") {
+      map.set(op.key, op.value);
+    } else {
+      map.delete(op.key);
+    }
+  }
+  return map;
+}
+
 function applyPatch<T extends Record<string, unknown>>(state: T, data: Record<string, unknown>): T {
   const next: Record<string, unknown> = { ...state };
   for (const [path, value] of Object.entries(data)) {
     const keys = path.split(".");
     if (keys.length === 1) {
-      if (value !== null && typeof value === "object" && "op" in (value as object)) {
-        const mp = value as MapPatch;
-        const existing = next[path];
-        const map: Map<string, unknown> = existing instanceof Map ? new Map(existing) : new Map();
-        if (mp.op === "set") {
-          map.set(mp.key, mp.value);
-        } else {
-          map.delete(mp.key);
-        }
-        next[path] = map;
+      if (Array.isArray(value) && value.length > 0 && value.every(isMapPatch)) {
+        next[path] = applyMapOps(next[path], value as MapPatch[]);
+      } else if (isMapPatch(value)) {
+        next[path] = applyMapOps(next[path], [value]);
       } else {
         next[path] = value;
       }
