@@ -11,7 +11,11 @@ type ChangeListener<T> = (state: T) => void;
 type KeyChangeListener = (value: unknown) => void;
 
 function isMapPatch(v: unknown): v is MapPatch {
-  return v !== null && typeof v === "object" && "op" in (v as object);
+  if (v === null || typeof v !== "object") return false;
+  const op = (v as { op?: unknown }).op;
+  if (op === "set") return "key" in (v as object) && "value" in (v as object);
+  if (op === "delete") return "key" in (v as object);
+  return false;
 }
 
 function applyMapOps(existing: unknown, ops: MapPatch[]): Map<string, unknown> {
@@ -31,7 +35,8 @@ function applyPatch<T extends Record<string, unknown>>(state: T, data: Record<st
   for (const [path, value] of Object.entries(data)) {
     const keys = path.split(".");
     if (keys.length === 1) {
-      if (Array.isArray(value) && value.length > 0 && value.every(isMapPatch)) {
+      if (Array.isArray(value) && value.every(isMapPatch)) {
+        if (value.length === 0) continue;
         next[path] = applyMapOps(next[path], value as MapPatch[]);
       } else if (isMapPatch(value)) {
         next[path] = applyMapOps(next[path], [value]);
