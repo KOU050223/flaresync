@@ -108,4 +108,67 @@ describe("DurableSyncClient — パッチ受信とstate更新", () => {
     expect((client.getState().players as Map<string, number>).has("p1")).toBe(false);
     client.close();
   });
+
+  it("8-8: 配列の MapPatch が来たとき全 set 操作が順に適用される", () => {
+    const client = new DurableSyncClient("ws://test", { players: new Map<string, number>() });
+    sendPatch({
+      players: [
+        { op: "set", key: "p1", value: 1 },
+        { op: "set", key: "p1", value: 2 },
+      ],
+    });
+    expect((client.getState().players as Map<string, number>).get("p1")).toBe(2);
+    client.close();
+  });
+
+  it("8-9: 配列内に set と delete が混ざっても順序通りに反映される", () => {
+    const client = new DurableSyncClient("ws://test", {
+      players: new Map<string, number>([["p1", 5]]),
+    });
+    sendPatch({
+      players: [
+        { op: "set", key: "p2", value: 9 },
+        { op: "delete", key: "p1" },
+        { op: "set", key: "p3", value: 7 },
+      ],
+    });
+    const m = client.getState().players as Map<string, number>;
+    expect(m.has("p1")).toBe(false);
+    expect(m.get("p2")).toBe(9);
+    expect(m.get("p3")).toBe(7);
+    client.close();
+  });
+
+  it("8-10: 既存に Map が無くても配列 MapPatch から新規 Map が作られる", () => {
+    const client = new DurableSyncClient("ws://test", {} as Record<string, unknown>);
+    sendPatch({
+      players: [
+        { op: "set", key: "p1", value: 1 },
+        { op: "set", key: "p2", value: 2 },
+      ],
+    });
+    const m = client.getState().players as Map<string, number>;
+    expect(m).toBeInstanceOf(Map);
+    expect(m.get("p1")).toBe(1);
+    expect(m.get("p2")).toBe(2);
+    client.close();
+  });
+
+  it("8-11: 配列 MapPatch でも onChange は 1 回、onKeyChange は値変化で 1 回呼ばれる", () => {
+    const client = new DurableSyncClient("ws://test", { players: new Map<string, number>() });
+    const onChange = vi.fn();
+    const onKey = vi.fn();
+    client.onChange(onChange);
+    client.onKeyChange("players", onKey);
+    sendPatch({
+      players: [
+        { op: "set", key: "p1", value: 1 },
+        { op: "set", key: "p1", value: 2 },
+      ],
+    });
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onKey).toHaveBeenCalledTimes(1);
+    expect((onKey.mock.calls[0]![0] as Map<string, number>).get("p1")).toBe(2);
+    client.close();
+  });
 });
