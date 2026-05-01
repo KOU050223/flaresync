@@ -112,13 +112,11 @@ export class DurableSyncClient<T extends Record<string, unknown>> {
   }
 
   private getDeep(obj: Record<string, unknown>, path: string): unknown {
-    return path
-      .split(".")
-      .reduce<unknown>(
-        (cur, k) =>
-          cur !== null && typeof cur === "object" ? (cur as Record<string, unknown>)[k] : undefined,
-        obj,
-      );
+    return path.split(".").reduce<unknown>((cur, k) => {
+      if (cur === null || typeof cur !== "object") return undefined;
+      if (cur instanceof Map) return cur.get(k);
+      return (cur as Record<string, unknown>)[k];
+    }, obj);
   }
 
   getState(): T {
