@@ -171,4 +171,30 @@ describe("DurableSyncClient — パッチ受信とstate更新", () => {
     expect((onKey.mock.calls[0]![0] as Map<string, number>).get("p1")).toBe(2);
     client.close();
   });
+
+  it("8-12: onKeyChange で Map 内パスを指定したとき値変化で発火する", () => {
+    const client = new DurableSyncClient("ws://test", {
+      players: new Map<string, { x: number }>([["p1", { x: 0 }]]),
+    });
+    const fn = vi.fn();
+    client.onKeyChange("players.p1", fn);
+    sendPatch({ players: { op: "set", key: "p1", value: { x: 10 } } });
+    expect(fn).toHaveBeenCalledTimes(1);
+    expect(fn.mock.calls[0]![0]).toEqual({ x: 10 });
+    client.close();
+  });
+
+  it("8-13: onKeyChange で Map 内パスを指定したとき無関係な変更では発火しない", () => {
+    const client = new DurableSyncClient("ws://test", {
+      players: new Map<string, number>([
+        ["p1", 1],
+        ["p2", 2],
+      ]),
+    });
+    const fn = vi.fn();
+    client.onKeyChange("players.p1", fn);
+    sendPatch({ players: { op: "set", key: "p2", value: 99 } });
+    expect(fn).not.toHaveBeenCalled();
+    client.close();
+  });
 });
